@@ -1,7 +1,13 @@
+<?php
+$ajax = isset($_SERVER['HTTP_X_REQUESTED_WITH']) && $_SERVER['HTTP_X_REQUESTED_WITH'] == 'XMLHttpRequest'; 
+if(!$ajax && !isset($_REQUEST['page'])):
+?>
 <html>
 <head>
 <title>Recipe Detail</title>
-<link href="/myrecipe/webroot/css/style.css" rel="stylesheet" type="text/css" />
+<link href="../webroot/css/style.css" rel="stylesheet" type="text/css" />
+<script type="text/javascript" src="../webroot/js/jquery.js"></script>
+<script type="text/javascript" src="/myrecipe/webroot/js/comments.js"></script>
 </head>
 
 <body>
@@ -89,35 +95,53 @@ foreach ($template->categorys as $category)
 </tr>
 </table>
 
- <!--这里掉出所有的comments，用foreach每个1个tr-->
+ <!--print out comments for each recipe-->
+ <div id="comments">
+ <input type="hidden" value="<?php echo $template->recipes->recipe_id?>" name="recipe_id" />
  <?php
-if (count($template->comments)!=0)
-{
-echo "<br />Comments:<br /><br />";
-$records_per_page = 2;
-if (isset($_GET["page"]))
-{
-$page = $_GET["page"];
-}
-else
-{
-$page = 1;
-}
-$total_records = count($template->comments);
-$total_pages = ceil($total_records / $records_per_page);
-$started_record = $records_per_page * ($page - 1);
-//echo $total_pages;
-if (($page*$records_per_page) > $total_records)
-{
-$j = ($page*$records_per_page) - $total_records;
-}
-else
-{
-$j = 0;
-}
-$i = $started_record;
-$recipesarr = array($template->recipes);
-while($template->comments AND $j<$records_per_page)
+ endif;
+ $html = '';
+if (count($template->comments)!=0){
+	//echo "<br />Comments:<br /><br />";
+	$html .= "<input type='hidden' value='{$template->recipes->recipe_id}' name='recipe_id' />";
+	$html .= "<br />Comments:<br /><br />";
+	$records_per_page = 2;//how many pieces of comments shown on each page
+	
+	//get which page has been selected
+	
+	if ($ajax){
+		if(isset($_REQUEST["page"])){
+			$page = $_REQUEST["page"];
+			//echo $_REQUEST["page"];
+		}		
+	}else{
+		if (isset($_GET["page"])){
+			$page = $_GET["page"];
+		}else{
+			$page = 1;
+		}
+	}
+		
+	
+	/*if (isset($_GET["page"])){
+		$page = $_GET["page"];
+	}else{
+		$page = 1;
+	}*/
+	
+	$total_records = count($template->comments);
+	$total_pages = ceil($total_records / $records_per_page);
+	$started_record = $records_per_page * ($page - 1);
+	//echo $total_pages;
+	if (($page*$records_per_page) > $total_records){
+		$j = ($page*$records_per_page) - $total_records;
+	}else{
+		$j = 0;
+	}
+	
+	$i = $started_record;
+	$recipesarr = array($template->recipes);
+	while($template->comments AND $j<$records_per_page)
 	{
 		if (count($template->users!=0))
 		{
@@ -125,38 +149,46 @@ while($template->comments AND $j<$records_per_page)
 			{
 				if ($user->user_id == $template->comments[$i]->user_id)
 				{
-					echo $user->username . ": [";
+					//echo $user->username . ": [";
+					$html .= '<div id="content">';
+					$html .= $user->username . ': [';
 				}
 			}
 		}
-		echo $template->comments[$i]->rating . "] ";
-		echo $template->comments[$i]->content . "<br />";
-		echo "by: " . $template->comments[$i]->add_time . "<br /><br />";
+		//echo $template->comments[$i]->rating . "] ";
+		$html .= $template->comments[$i]->rating . "] ";
+		//echo $template->comments[$i]->content . "<br />";
+		$html .= $template->comments[$i]->content . "<br />";
+		//echo "by: " . $template->comments[$i]->add_time . "<br /><br />";
+		$html .= "by: " . $template->comments[$i]->add_time . "<br /><br />";
 		$i++;
 		$j++;
 	}
-if ($page > 1)
-{
-echo "<a a class='register' href='?page=".($page-1)."'>Previous</a>";
-}
-for ($m =1; $m <= $total_pages; $m++)
-{
-if ($m == $page)
-{
-echo $m;
-}
-else
-{
-echo "<a a class='register' href='?page=".$m."'>".$m."</a>";
-}
-}
-if ($page < $total_pages)
-{
-echo "<a class='register' href='?page=".($page+1)."'>Next</a>";
-}
+	$html .= "</div>";
+	if ($page > 1){
+		//echo "<a a class='register' href='?page=".($page-1)."'>Previous</a>";
+		$html .= "<a a class='register' href='?page=".($page-1)."'>Previous</a>";
+	}
+	for ($m =1; $m <= $total_pages; $m++){
+		if ($m == $page){
+			//echo $m;
+			$html .= $m;
+		}else{
+			//echo "<a a class='register' href='?page=".$m."'>".$m."</a>";
+			$html .= "<a a class='register' href='?page=".$m."'>".$m."</a>";
+		}
+	}
+	if ($page < $total_pages){
+		//echo "<a class='register' href='?page=".($page+1)."'>Next</a>";
+		$html .= "<a class='register' href='?page=".($page+1)."'>Next</a>";
+	}
+	
+	echo $html;
+	
 }
 ?>
- 
+</div>
+<?php if(!$ajax && !isset($_REQUEST['page'])):?>
 <?php if (isset($_SESSION['user'])) { ?>
 <?php if(!$template->isCommented) { ?>
 <form method="post" action="createComment">
@@ -222,7 +254,7 @@ echo "<a class='register' href='?page=".($page+1)."'>Next</a>";
    
    
    
-  
+
 
 
 <div id="fotter1">
@@ -236,3 +268,4 @@ echo "<a class='register' href='?page=".($page+1)."'>Next</a>";
 
 </body>
 </html>
+  <?php endif;?>
